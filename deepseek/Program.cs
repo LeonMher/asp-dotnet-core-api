@@ -67,8 +67,21 @@ builder.Services.AddAuthentication(options =>
     };
 });
 
+// Add CORS policy
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowFrontend", policy =>
+    {
+        policy.WithOrigins("http://localhost:5173") // Allow requests from this origin
+              .AllowAnyHeader()                      // Allow any headers
+              .AllowAnyMethod();                      // Allow any HTTP methods (GET, POST, etc.)
+    });
+});
+
 var app = builder.Build();
 
+// Apply CORS policy
+app.UseCors("AllowFrontend");
 
 // Apply migrations and seed data
 using (var scope = app.Services.CreateScope())
@@ -90,7 +103,6 @@ using (var scope = app.Services.CreateScope())
         dbContext.SaveChanges();
     }
 }
-
 
 // Configure the HTTP request pipeline
 if (app.Environment.IsDevelopment())

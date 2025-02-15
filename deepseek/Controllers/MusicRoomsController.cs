@@ -38,4 +38,20 @@ public class MusicRoomsController : ControllerBase
 
         return Ok(musicRooms);
     }
+
+    [HttpGet("{id}/busydates")]
+    public async Task<IActionResult> GetBusyDates(int id)
+    {
+        // Fetch bookings for the specified music room
+        var busyDates = await _context.Bookings
+            .Where(b => b.MusicRoomId == id)
+            .Select(b => new
+            {
+                StartTime = b.StartTime,
+                EndTime = b.EndTime
+            })
+            .ToListAsync();
+
+        return Ok(busyDates);
+    }
 }
