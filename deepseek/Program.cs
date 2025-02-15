@@ -69,6 +69,29 @@ builder.Services.AddAuthentication(options =>
 
 var app = builder.Build();
 
+
+// Apply migrations and seed data
+using (var scope = app.Services.CreateScope())
+{
+    var services = scope.ServiceProvider;
+    var dbContext = services.GetRequiredService<ApplicationDbContext>();
+
+    // Apply pending migrations
+    dbContext.Database.Migrate();
+
+    // Seed music rooms if they don't exist
+    if (!dbContext.MusicRooms.Any())
+    {
+        dbContext.MusicRooms.AddRange(
+            new MusicRoom { Name = "Blue", Description = "A cozy room with blue walls." },
+            new MusicRoom { Name = "Red", Description = "A vibrant room with red walls." },
+            new MusicRoom { Name = "Green", Description = "A calming room with green walls." }
+        );
+        dbContext.SaveChanges();
+    }
+}
+
+
 // Configure the HTTP request pipeline
 if (app.Environment.IsDevelopment())
 {
