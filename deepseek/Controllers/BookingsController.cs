@@ -18,26 +18,6 @@ public class BookingsController : ControllerBase
         _userManager = userManager;
     }
 
-    //// GET: api/bookings
-    //[HttpGet]
-    //public async Task<IActionResult> GetAllBookings()
-    //{
-    //    var bookings = await _context.Bookings
-    //        .Include(b => b.User)
-    //        .Include(b => b.MusicRoom)
-    //        .Select(b => new BookingDto
-    //        {
-    //            Id = b.Id,
-    //            StartTime = b.StartTime,
-    //            EndTime = b.EndTime,
-    //            MusicRoomName = b.MusicRoom.Name,
-    //            UserName = $"{b.User.FirstName} {b.User.LastName}"
-    //        })
-    //        .ToListAsync();
-
-    //    return Ok(bookings);
-    //}
-
 
     // GET: api/bookings/mybookings
     [HttpGet("mybookings")]
@@ -142,6 +122,61 @@ public class BookingsController : ControllerBase
             UserName = $"{user.FirstName} {user.LastName}"
         });
     }
+
+
+    // POST: api/bookings/admin
+    [HttpPost("admin")]
+    [Authorize(Roles = "Admin")] // Only admins can access this endpoint
+    public async Task<IActionResult> CreateBookingAdmin([FromBody] CreateAdminBookingDto createAdminBookingDto)
+    {
+        // Check if the user exists
+        var user = await _userManager.FindByIdAsync(createAdminBookingDto.UserId);
+        if (user == null)
+        {
+            return NotFound("User not found.");
+        }
+
+        // Check if the music room exists
+        var musicRoom = await _context.MusicRooms.FindAsync(createAdminBookingDto.MusicRoomId);
+        if (musicRoom == null)
+        {
+            return NotFound("Music room not found.");
+        }
+
+        // Check for overlapping bookings
+        var isRoomBooked = await _context.Bookings
+            .AnyAsync(b => b.MusicRoomId == createAdminBookingDto.MusicRoomId &&
+                           b.StartTime < createAdminBookingDto.EndTime &&
+                           b.EndTime > createAdminBookingDto.StartTime);
+
+        if (isRoomBooked)
+        {
+            return BadRequest("The room is already booked for the selected time.");
+        }
+
+        // Create the booking
+        var booking = new Booking
+        {
+            StartTime = createAdminBookingDto.StartTime,
+            EndTime = createAdminBookingDto.EndTime,
+            UserId = createAdminBookingDto.UserId,
+            MusicRoomId = createAdminBookingDto.MusicRoomId
+        };
+
+        _context.Bookings.Add(booking);
+        await _context.SaveChangesAsync();
+
+        return Ok(new BookingDto
+        {
+            Id = booking.Id,
+            StartTime = booking.StartTime,
+            EndTime = booking.EndTime,
+            MusicRoomName = musicRoom.Name,
+            UserName = $"{user.FirstName} {user.LastName}"
+        });
+    }
+
+
 
 
     // DELETE: api/bookings/{id}
