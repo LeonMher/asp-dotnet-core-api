@@ -67,6 +67,12 @@ builder.Services.AddAuthentication(options =>
     };
 });
 
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("AdminOnly", policy => policy.RequireRole("Admin"));
+});
+
+
 // Add CORS policy
 builder.Services.AddCors(options =>
 {
@@ -79,6 +85,56 @@ builder.Services.AddCors(options =>
 });
 
 var app = builder.Build();
+
+//admin
+if (app.Environment.IsDevelopment())
+{
+    using (var scope = app.Services.CreateScope())
+    {
+        var services = scope.ServiceProvider;
+        var userManager = services.GetRequiredService<UserManager<User>>();
+        var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
+
+        // Seed the admin role if it doesn't exist
+        if (!await roleManager.RoleExistsAsync("Admin"))
+        {
+            await roleManager.CreateAsync(new IdentityRole("Admin"));
+        }
+
+        // Seed the admin user if it doesn't exist
+        var adminEmail = "admin@gmail.com";
+        var adminUser = await userManager.FindByEmailAsync(adminEmail);
+        if (adminUser == null)
+        {
+            adminUser = new User
+            {
+                UserName = adminEmail,
+                Email = adminEmail,
+                FirstName = "Admin",
+                LastName = "User"
+            };
+
+            // Create the admin user
+            var result = await userManager.CreateAsync(adminUser, "AdminPassword123!");
+            if (result.Succeeded)
+            {
+                // Assign the admin role to the user
+                await userManager.AddToRoleAsync(adminUser, "Admin");
+            }
+            else
+            {
+                // Log errors if user creation fails
+                Console.WriteLine("Failed to create admin user:");
+                foreach (var error in result.Errors)
+                {
+                    Console.WriteLine(error.Description);
+                }
+            }
+        }
+    }
+}
+
+
 
 // Apply CORS policy
 app.UseCors("AllowFrontend");

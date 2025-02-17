@@ -18,25 +18,25 @@ public class BookingsController : ControllerBase
         _userManager = userManager;
     }
 
-    // GET: api/bookings
-    [HttpGet]
-    public async Task<IActionResult> GetAllBookings()
-    {
-        var bookings = await _context.Bookings
-            .Include(b => b.User)
-            .Include(b => b.MusicRoom)
-            .Select(b => new BookingDto
-            {
-                Id = b.Id,
-                StartTime = b.StartTime,
-                EndTime = b.EndTime,
-                MusicRoomName = b.MusicRoom.Name,
-                UserName = $"{b.User.FirstName} {b.User.LastName}"
-            })
-            .ToListAsync();
+    //// GET: api/bookings
+    //[HttpGet]
+    //public async Task<IActionResult> GetAllBookings()
+    //{
+    //    var bookings = await _context.Bookings
+    //        .Include(b => b.User)
+    //        .Include(b => b.MusicRoom)
+    //        .Select(b => new BookingDto
+    //        {
+    //            Id = b.Id,
+    //            StartTime = b.StartTime,
+    //            EndTime = b.EndTime,
+    //            MusicRoomName = b.MusicRoom.Name,
+    //            UserName = $"{b.User.FirstName} {b.User.LastName}"
+    //        })
+    //        .ToListAsync();
 
-        return Ok(bookings);
-    }
+    //    return Ok(bookings);
+    //}
 
 
     // GET: api/bookings/mybookings
@@ -55,6 +55,27 @@ public class BookingsController : ControllerBase
             .Include(b => b.User)
             .Include(b => b.MusicRoom)
             .Where(b => b.UserId == userId)
+            .Select(b => new BookingDto
+            {
+                Id = b.Id,
+                StartTime = b.StartTime,
+                EndTime = b.EndTime,
+                MusicRoomName = b.MusicRoom.Name,
+                UserName = $"{b.User.FirstName} {b.User.LastName}"
+            })
+            .ToListAsync();
+
+        return Ok(bookings);
+    }
+
+    // GET: api/bookings
+    [HttpGet]
+    [Authorize(Roles = "Admin")] // Only admins can access this endpoint
+    public async Task<IActionResult> GetAllBookings()
+    {
+        var bookings = await _context.Bookings
+            .Include(b => b.User)
+            .Include(b => b.MusicRoom)
             .Select(b => new BookingDto
             {
                 Id = b.Id,

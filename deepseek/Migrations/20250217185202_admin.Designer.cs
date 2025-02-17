@@ -11,8 +11,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace deepseek.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20250212180825_musicrooms")]
-    partial class musicrooms
+    [Migration("20250217185202_admin")]
+    partial class admin
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)

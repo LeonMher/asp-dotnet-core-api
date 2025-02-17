@@ -46,12 +46,21 @@ public class AuthController : ControllerBase
 
         if (user != null && await _userManager.CheckPasswordAsync(user, model.Password))
         {
+            // Get the user's roles
+            var roles = await _userManager.GetRolesAsync(user);
+
             var authClaims = new List<Claim>
         {
-            new Claim(ClaimTypes.NameIdentifier, user.Id), // Add this line
+            new Claim(ClaimTypes.NameIdentifier, user.Id),
             new Claim(ClaimTypes.Name, user.UserName),
             new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
         };
+
+            // Add roles to the claims
+            foreach (var role in roles)
+            {
+                authClaims.Add(new Claim(ClaimTypes.Role, role));
+            }
 
             var token = GetToken(authClaims);
 
