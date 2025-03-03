@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace deepseek.Migrations
 {
     /// <inheritdoc />
-    public partial class bookingstateenum : Migration
+    public partial class covertedtime : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)

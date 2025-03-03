@@ -5,6 +5,7 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Text;
 using System.Text.Json.Serialization;
+using YourProject.Hubs;
 using YourProject.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -94,8 +95,11 @@ builder.Services.AddCors(options =>
     });
 });
 
+builder.Services.AddSignalR();
+
 var app = builder.Build();
 
+app.MapHub<BookingHub>("/bookingHub");
 //admin
 if (app.Environment.IsDevelopment())
 {
