@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
+using YourProject.Services;
 
 [ApiController]
 [Route("api/[controller]")]
@@ -19,18 +20,15 @@ public class BookingsController : ControllerBase
     }
 
 
-    // GET: api/bookings/mybookings
     [HttpGet("mybookings")]
     public async Task<IActionResult> GetMyBookings()
     {
-        
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
         if (string.IsNullOrEmpty(userId))
         {
             return Unauthorized();
         }
 
-        // Fetch bookings for the current user
         var bookings = await _context.Bookings
             .Include(b => b.User)
             .Include(b => b.MusicRoom)
@@ -40,6 +38,7 @@ public class BookingsController : ControllerBase
                 Id = b.Id,
                 StartTime = b.StartTime,
                 EndTime = b.EndTime,
+                State = b.State,
                 MusicRoomName = b.MusicRoom.Name,
                 UserName = $"{b.User.FirstName} {b.User.LastName}"
             })
@@ -48,7 +47,6 @@ public class BookingsController : ControllerBase
         return Ok(bookings);
     }
 
-    // POST: api/bookings
     [HttpPost]
     public async Task<IActionResult> CreateBooking([FromBody] CreateBookingDto createBookingDto)
     {
@@ -64,6 +62,12 @@ public class BookingsController : ControllerBase
             return NotFound("User not found.");
         }
 
+        var musicRoom = await _context.MusicRooms.FindAsync(createBookingDto.MusicRoomId);
+        if (musicRoom == null)
+        {
+            return NotFound("Music room not found.");
+        }
+
         // Validate minimum booking duration (1 hour)
         var bookingDuration = createBookingDto.EndTime - createBookingDto.StartTime;
         if (bookingDuration.TotalHours < 1)
@@ -71,16 +75,12 @@ public class BookingsController : ControllerBase
             return BadRequest("The minimum booking duration is 1 hour.");
         }
 
-        var musicRoom = await _context.MusicRooms.FindAsync(createBookingDto.MusicRoomId);
-        if (musicRoom == null)
-        {
-            return NotFound("Music room not found.");
-        }
-
+        // Check for overlapping bookings (ignore canceled bookings)
         var isRoomBooked = await _context.Bookings
             .AnyAsync(b => b.MusicRoomId == createBookingDto.MusicRoomId &&
                            b.StartTime < createBookingDto.EndTime &&
-                           b.EndTime > createBookingDto.StartTime);
+                           b.EndTime > createBookingDto.StartTime &&
+                           b.State != BookingState.Canceled);
 
         if (isRoomBooked)
         {
@@ -91,6 +91,7 @@ public class BookingsController : ControllerBase
         {
             StartTime = createBookingDto.StartTime,
             EndTime = createBookingDto.EndTime,
+            State = createBookingDto.State, // Set the state
             UserId = userId,
             MusicRoomId = createBookingDto.MusicRoomId
         };
@@ -103,6 +104,7 @@ public class BookingsController : ControllerBase
             Id = booking.Id,
             StartTime = booking.StartTime,
             EndTime = booking.EndTime,
+            State = booking.State,
             MusicRoomName = musicRoom.Name,
             UserName = $"{user.FirstName} {user.LastName}"
         });
@@ -136,8 +138,8 @@ public class BookingsController : ControllerBase
             return Forbid();
         }
 
-        // Cancel the booking
-        _context.Bookings.Remove(booking);
+        // Update the booking state to "Canceled"
+        booking.State = BookingState.Canceled;
         await _context.SaveChangesAsync();
 
         return Ok(new { Message = "Booking canceled successfully" });
@@ -223,12 +225,10 @@ public class BookingsController : ControllerBase
         });
     }
 
-    // PUT: api/bookings/admin/{id}
-    [HttpPut("admin/{id}")]
-    [Authorize(Roles = "Admin")]
-    public async Task<IActionResult> UpdateBookingAdmin(int id, [FromBody] UpdateAdminBookingDto updateAdminBookingDto)
+
+    [HttpPut("{id}/state")]
+    public async Task<IActionResult> UpdateBookingState(int id, [FromBody] UpdateBookingStateDto updateBookingStateDto)
     {
-        // Find the booking and include the MusicRoom
         var booking = await _context.Bookings
             .Include(b => b.User)
             .Include(b => b.MusicRoom)
@@ -239,21 +239,8 @@ public class BookingsController : ControllerBase
             return NotFound();
         }
 
-        // Check for overlapping bookings (excluding the current booking)
-        var isRoomBooked = await _context.Bookings
-            .AnyAsync(b => b.MusicRoomId == booking.MusicRoomId &&
-                           b.Id != id &&
-                           b.StartTime < updateAdminBookingDto.EndTime &&
-                           b.EndTime > updateAdminBookingDto.StartTime);
-
-        if (isRoomBooked)
-        {
-            return BadRequest("The room is already booked for the selected time.");
-        }
-
-        booking.StartTime = updateAdminBookingDto.StartTime ?? booking.StartTime;
-        booking.EndTime = updateAdminBookingDto.EndTime ?? booking.EndTime;
-        booking.MusicRoom.Name = updateAdminBookingDto.MusicRoomName ?? booking.MusicRoom.Name;
+        // Update the booking state
+        booking.State = updateBookingStateDto.State;
 
         await _context.SaveChangesAsync();
 
@@ -262,7 +249,8 @@ public class BookingsController : ControllerBase
             Id = booking.Id,
             StartTime = booking.StartTime,
             EndTime = booking.EndTime,
-            MusicRoomName = booking.MusicRoom.Name, 
+            State = booking.State,
+            MusicRoomName = booking.MusicRoom.Name,
             UserName = $"{booking.User.FirstName} {booking.User.LastName}"
         });
     }
@@ -284,13 +272,12 @@ public class BookingsController : ControllerBase
             return NotFound();
         }
 
-        // Delete the booking
-        _context.Bookings.Remove(booking);
+        // Update the booking state to "Canceled"
+        booking.State = BookingState.Canceled;
         await _context.SaveChangesAsync();
 
         return Ok(new { Message = "Booking canceled successfully by admin" });
     }
-
 
 
 }

@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace deepseek.Migrations
 {
     /// <inheritdoc />
-    public partial class admin : Migration
+    public partial class bookingstateenum : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -201,6 +201,7 @@ namespace deepseek.Migrations
                         .Annotation("SqlServer:Identity", "1, 1"),
                     StartTime = table.Column<DateTime>(type: "datetime2", nullable: false),
                     EndTime = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    State = table.Column<int>(type: "int", nullable: false),
                     UserId = table.Column<string>(type: "nvarchar(450)", nullable: false),
                     MusicRoomId = table.Column<int>(type: "int", nullable: false)
                 },

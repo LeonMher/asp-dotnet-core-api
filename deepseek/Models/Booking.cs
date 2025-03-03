@@ -1,9 +1,9 @@
-﻿// Models/Booking.cs
-public class Booking
+﻿public class Booking
 {
     public int Id { get; set; }
     public DateTime StartTime { get; set; }
     public DateTime EndTime { get; set; }
+    public BookingState State { get; set; } = BookingState.Booked; // Default state
 
     // Relationship with User
     public string UserId { get; set; }

@@ -11,8 +11,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace deepseek.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20250217185202_admin")]
-    partial class admin
+    [Migration("20250303171245_bookingstateenum")]
+    partial class bookingstateenum
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -40,6 +40,9 @@ namespace deepseek.Migrations
 
                     b.Property<DateTime>("StartTime")
                         .HasColumnType("datetime2");
+
+                    b.Property<int>("State")
+                        .HasColumnType("int");
 
                     b.Property<string>("UserId")
                         .IsRequired()
