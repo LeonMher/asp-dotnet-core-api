@@ -13,6 +13,7 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container
 builder.Services.AddControllers();
 
+
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {
@@ -83,15 +84,14 @@ builder.Services.AddAuthorization(options =>
     options.AddPolicy("AdminOnly", policy => policy.RequireRole("Admin"));
 });
 
-
-// Add CORS policy
+// Add CORS policy to allow all origins, headers, and methods
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowFrontend", policy =>
+    options.AddPolicy("AllowAll", policy =>
     {
-        policy.WithOrigins("http://localhost:5173") // Allow requests from this origin
-              .AllowAnyHeader()                      // Allow any headers
-              .AllowAnyMethod();                      // Allow any HTTP methods (GET, POST, etc.)
+        policy.AllowAnyOrigin()  // Allow requests from any origin
+              .AllowAnyHeader()  // Allow any headers
+              .AllowAnyMethod(); // Allow any HTTP methods (GET, POST, etc.)
     });
 });
 
@@ -99,8 +99,15 @@ builder.Services.AddSignalR();
 
 var app = builder.Build();
 
+// Apply CORS policy
+app.UseCors("AllowAll");
+
+// Map SignalR hub
 app.MapHub<BookingHub>("/bookingHub");
-//admin
+
+app.UseStaticFiles();
+
+// Seed admin user and role in development
 if (app.Environment.IsDevelopment())
 {
     using (var scope = app.Services.CreateScope())
@@ -148,11 +155,6 @@ if (app.Environment.IsDevelopment())
     }
 }
 
-
-
-// Apply CORS policy
-app.UseCors("AllowFrontend");
-
 // Apply migrations and seed data
 using (var scope = app.Services.CreateScope())
 {
@@ -166,9 +168,28 @@ using (var scope = app.Services.CreateScope())
     if (!dbContext.MusicRooms.Any())
     {
         dbContext.MusicRooms.AddRange(
-            new MusicRoom { Name = "Blue", Description = "A cozy room with blue walls." },
-            new MusicRoom { Name = "Red", Description = "A vibrant room with red walls." },
-            new MusicRoom { Name = "Green", Description = "A calming room with green walls." }
+            new MusicRoom
+            {
+                Name = "Blue",
+                Description = "A cozy room with blue walls.",
+                ImagePath = "uploads/default-rooms/blue-room.jpg",
+                ImageFileName = "blue-room.jpg",
+                ImageContentType = "image/jpeg"
+            },
+            new MusicRoom {
+                Name = "Red",
+                Description = "A vibrant room with red walls.",
+                ImagePath = "uploads/default-rooms/red-room.jpg",
+                ImageFileName = "red-room.jpg",
+                ImageContentType = "image/jpeg"
+            },
+            new MusicRoom {
+                Name = "Green",
+                Description = "A calming room with green walls.",
+                ImagePath = "uploads/default-rooms/green-room.jpg",
+                ImageFileName = "green-room.jpg",
+                ImageContentType = "image/jpeg"
+            }
         );
         dbContext.SaveChanges();
     }

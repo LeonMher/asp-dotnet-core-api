@@ -19,4 +19,8 @@
     <PackageReference Include="TimeZoneConverter" Version="7.0.0" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Include="wwwroot\images\rooms\blue-room.jpg" />
+  </ItemGroup>
+
 </Project>
